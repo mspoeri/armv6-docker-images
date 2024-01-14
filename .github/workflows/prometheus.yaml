@@ -1,0 +1,50 @@
+---
+name: Prometheus
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Prometheus version'
+        required: true
+        type: string
+
+permissions:
+  contents: read    # This is required for actions/checkout
+  packages: write   # This is required for docker/build-push-action
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine version
+        id: version
+        run: |
+          echo "version=${{ github.event.inputs.version || '2.48.1' }}" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ steps.version.outputs.version }}
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./prometheus
+          platforms: linux/arm/v6
+          push: true
+          build-args: VERSION=${{ steps.version.outputs.version }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
