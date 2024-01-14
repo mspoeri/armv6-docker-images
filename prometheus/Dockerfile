@@ -1,4 +1,4 @@
-FROM --platform="arm64" busybox as prep
+FROM --platform="amd64" busybox as prep
 ARG VERSION="2.48.1"
 
 RUN wget -O prometheus.tar.gz \
@@ -12,7 +12,7 @@ RUN chown -R 65532:65532 /etc/prometheus
 
 FROM --platform="arm64" gcr.io/distroless/base:nonroot as base
 
-FROM scratch
+FROM --platform="linux/arm/v6" scratch
 
 LABEL org.opencontainers.image.source https://github.com/mspoeri/prometheus-armv6-docker
 
